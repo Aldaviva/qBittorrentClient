@@ -1,9 +1,9 @@
-qBittorrentClient
+🌊 qBittorrentClient
 ===
 
 [![NuGet](https://img.shields.io/nuget/v/qBittorrentApiClient?logo=nuget&color=informational)](https://www.nuget.org/packages/qBittorrentApiClient) [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Aldaviva/qBittorrentClient/dotnetpackage.yml?branch=master&logo=github)](https://github.com/Aldaviva/qBittorrentClient/actions/workflows/dotnetpackage.yml)
 
-*.NET API client for [qBittorrent](https://www.qbittorrent.org) HTTP [API](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0))*
+*.NET client for [qBittorrent](https://www.qbittorrent.org) HTTP [API](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0))*
 
 <!-- MarkdownTOC autolink="true" bracket="round" autoanchor="false" levels="1,2,3" -->
 
