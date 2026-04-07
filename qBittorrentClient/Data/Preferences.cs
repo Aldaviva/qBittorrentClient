@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace qBittorrent.Client.Data;
 
 /// <summary>
@@ -8,6 +6,9 @@ namespace qBittorrent.Client.Data;
 /// </summary>
 public record Preferences {
 
+    /// <summary>
+    /// The TCP/UDP port number on which to listen for incoming connections.
+    /// </summary>
     [JsonPropertyName("listen_port")]
     public ushort listeningPort { get; set; }
 

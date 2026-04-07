@@ -1,105 +1,62 @@
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using Unfucked;
-using Unfucked.HTTP;
-using Unfucked.HTTP.Config;
-
 namespace qBittorrent.Client;
 
-public interface qBittorrentApiClient: IDisposable {
+/// <inheritdoc cref="qBittorrentClient" />
+public sealed class qBittorrentApiClient(qBittorrentTransport apiClient): qBittorrentClient {
 
-    HttpClient httpClient { get; init; }
+    private readonly bool disposeApiClient;
 
-    /// <summary>
-    /// Send an HTTP request to the qBittorrent JSON REST API and receive a response.
-    /// </summary>
-    /// <param name="verb">HTTP verb to send</param>
-    /// <param name="apiMethodSubPath">request URL path after the <c>/api/v2/</c>, such as <c>app/setPreferences</c></param>
-    /// <param name="requestBody">optional object to be serialized to JSON and passed in the JSON form field, or <c>null</c> to not send a request body</param>
-    /// <param name="query">optional query parameters to send, or <c>null</c> to not send any query parameters</param>
-    /// <returns>the HTTP response</returns>
-    /// <exception cref="HttpRequestException">if the response status code is ≥400</exception>
-    Task<HttpResponseMessage> send(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null);
-
-    /// <inheritdoc cref="qBittorrentHttpApiClient.send"/>
-    /// <returns>deserialized response body</returns>
-    /// <typeparam name="T">the type to deserialize from the response JSON body</typeparam>
-    Task<T> send<T>(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null);
-
-}
-
-/// <summary>
-/// <para>HTTP REST API client for qBittorrent WebUI API</para>
-/// <para>Official documentation: <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)"/></para>
-/// </summary>
-public class qBittorrentHttpApiClient: qBittorrentApiClient {
-
-    private static readonly JsonSerializerOptions JSON_OPTIONS = new(JsonSerializerDefaults.Web)
-        { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }, PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
-
-    private readonly Lazy<HttpClient> defaultHttpClient = new(() => new UnfuckedHttpClient { Timeout = TimeSpan.FromSeconds(30) });
-    private readonly HttpClient?      customHttpClient;
-
-    public HttpClient httpClient {
-        get => customHttpClient ?? defaultHttpClient.Value;
-        init {
-            customHttpClient = value;
-            api              = createApi();
-            if (defaultHttpClient.IsValueCreated) {
-                defaultHttpClient.Value.Dispose();
-            }
-        }
+    /// <summary>Construct a new instance of a qBittorrent HTTP API client to communicate with a specific qBittorrent web server.</summary>
+    /// <param name="baseUri"></param>
+    public qBittorrentApiClient(Uri? baseUri = null): this(new qBittorrentHttpTransport(baseUri)) {
+        disposeApiClient = true;
     }
 
-    private readonly IWebTarget api;
-    private readonly Uri?       qBittorrentWebUiBaseUrl;
+    /// <inheritdoc />
+    public async Task<IEnumerable<TorrentInfo>> listTorrents(TorrentStateFilter stateFilter = TorrentStateFilter.ALL, string? categoryFilter = null, string? tagFilter = null,
+                                                             IEnumerable<string>? hashFilters = null, int limit = 0, int offset = 0, string? sort = null,
+                                                             bool descending = false) =>
+        await apiClient.send<IEnumerable<TorrentInfo>>(HttpMethod.Get, "torrents/info", query: new Dictionary<string, object?> {
+            { "filter", stateFilter },
+            { "category", categoryFilter },
+            { "tag", tagFilter },
+            { "sort", sort },
+            { "reverse", descending },
+            { "limit", limit },
+            { "offset", offset },
+            { "hashes", hashFilters?.Join('|') }
+        }).ConfigureAwait(false);
 
-    public qBittorrentHttpApiClient(Uri? qBittorrentWebUiBaseUrl = null) {
-        this.qBittorrentWebUiBaseUrl = qBittorrentWebUiBaseUrl;
-        api                          = createApi();
+    /// <inheritdoc />
+    public async Task<TorrentInfo?> getTorrent(string infoHash) => (await listTorrents(hashFilters: [infoHash], limit: 1).ConfigureAwait(false)).SingleOrDefault();
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TorrentFile>> listFilesInTorrent(TorrentInfo torrent) =>
+        (await apiClient.send<IEnumerable<TorrentFile>>(HttpMethod.Get, "torrents/files", query: ("hash", torrent.hash).KeyValues<string, object?>()).ConfigureAwait(false)).Select(file =>
+            file with { torrent = torrent });
+
+    /// <inheritdoc />
+    public async Task<Preferences> getPreferences() =>
+        await apiClient.send<Preferences>(HttpMethod.Get, "app/preferences").ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task setPreferences(Preferences newPreferences) {
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        await using
+#else
+        using
+#endif
+            Stream _ = await apiClient.send<Stream>(HttpMethod.Post, "app/setPreferences", newPreferences).ConfigureAwait(false);
     }
 
-    private IWebTarget createApi() => httpClient
-        .Property(PropertyKey.JsonSerializerOptions, JSON_OPTIONS)
-        .Target(qBittorrentWebUiBaseUrl?.Truncate(UriExtensions.Part.Origin) ?? "http://localhost:8080")
-        .Path("/api/v2");
+    /// <inheritdoc />
+    public async Task<TransferInfo> getTransferInfo() =>
+        await apiClient.send<TransferInfo>(HttpMethod.Get, "transfer/info").ConfigureAwait(false);
 
-    /// <summary>
-    /// Send an HTTP request to the qBittorrent JSON REST API and receive a response.
-    /// </summary>
-    /// <param name="verb">HTTP verb to send</param>
-    /// <param name="apiMethodSubPath">request URL path after the <c>/api/v2/</c>, such as <c>app/setPreferences</c></param>
-    /// <param name="requestBody">optional object to be serialized to JSON and passed in the JSON form field, or <c>null</c> to not send a request body</param>
-    /// <param name="query">optional query parameters to send, or <c>null</c> to not send any query parameters</param>
-    /// <returns>the HTTP response</returns>
-    /// <exception cref="HttpRequestException">if the response status code is ≥400</exception>
-    public async Task<HttpResponseMessage> send(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null) =>
-        await target(apiMethodSubPath, query).Send(verb, createBody(verb, requestBody)).ConfigureAwait(false);
-
-    /// <inheritdoc cref="send"/>
-    /// <returns>deserialized response body</returns>
-    /// <typeparam name="T">the type to deserialize from the response JSON body</typeparam>
-    public async Task<T> send<T>(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null) =>
-        await target(apiMethodSubPath, query).Send<T>(verb, createBody(verb, requestBody)).ConfigureAwait(false);
-
-    private IWebTarget target(string apiMethodSubPath, IEnumerable<KeyValuePair<string, object?>>? query) => api.Path(sanitizeSubpath(apiMethodSubPath)).QueryParam(query);
-
-    private static string sanitizeSubpath(string apiMethodSubPath) => apiMethodSubPath.TrimStart('/');
-
-    private static FormUrlEncodedContent? createBody(HttpMethod verb, object? requestBody) =>
-        (verb == HttpMethod.Post || verb == HttpMethod.Put) && requestBody != null ? new FormUrlEncodedContent([
-            new KeyValuePair<string, string>("json", JsonSerializer.Serialize(requestBody, JSON_OPTIONS)) // that's right, it's JSON inside form URL-encoding
-        ]) : null;
-
+    /// <inheritdoc />
     public void Dispose() {
-        if (defaultHttpClient.IsValueCreated) {
-            defaultHttpClient.Value.Dispose();
+        if (disposeApiClient) {
+            apiClient.Dispose();
         }
-        GC.SuppressFinalize(this);
     }
 
 }

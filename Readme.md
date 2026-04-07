@@ -29,19 +29,19 @@
 
 ## Installation
 ```ps1
-dotnet add package qBittorrentApiClient
+dotnet package add qBittorrentApiClient
 ```
 
 ## Usage
 ### Instantiation
 ```cs
-using qBittorrentClient qBittorrent = new qBittorrentHttpClient(new Uri("http://localhost:8080"));
+using qBittorrentClient qBittorrent = new qBittorrentApiClient(new Uri("http://localhost:8080"));
 ```
 
 #### Customize HTTP client
 ```cs
-using HttpClient http = new();
-using qBittorrentClient qBittorrent = new qBittorrentHttpClient(new qBittorrentHttpApiClient {
+using HttpClient http = new UnfuckedHttpClient();
+using qBittorrentClient qBittorrent = new qBittorrentApiClient(new qBittorrentHttpTransport {
     httpClient = http 
 });
 ```
