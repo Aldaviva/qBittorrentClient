@@ -7,15 +7,13 @@ public sealed class qBittorrentApiClient(qBittorrentTransport apiClient): qBitto
 
     /// <summary>Construct a new instance of a qBittorrent HTTP API client to communicate with a specific qBittorrent web server.</summary>
     /// <param name="baseUri"></param>
-    public qBittorrentApiClient(Uri? baseUri = null): this(new qBittorrentHttpTransport(baseUri)) {
+    public qBittorrentApiClient(Uri? baseUri = null): this(new qBittorrentHttpTransport(baseUri)) =>
         disposeApiClient = true;
-    }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TorrentInfo>> listTorrents(TorrentStateFilter stateFilter = TorrentStateFilter.ALL, string? categoryFilter = null, string? tagFilter = null,
-                                                             IEnumerable<string>? hashFilters = null, int limit = 0, int offset = 0, string? sort = null,
-                                                             bool descending = false) =>
-        await apiClient.send<IEnumerable<TorrentInfo>>(HttpMethod.Get, "torrents/info", query: new Dictionary<string, object?> {
+    public async Task<IReadOnlyList<TorrentInfo>> listTorrents(TorrentStateFilter stateFilter = TorrentStateFilter.ALL, string? categoryFilter = null, string? tagFilter = null,
+                                                               IEnumerable<string>? hashFilters = null, int limit = 0, int offset = 0, string? sort = null, bool descending = false) =>
+        await apiClient.send<IReadOnlyList<TorrentInfo>>(HttpMethod.Get, "torrents/info", query: new Dictionary<string, object?> {
             { "filter", stateFilter },
             { "category", categoryFilter },
             { "tag", tagFilter },
@@ -27,12 +25,13 @@ public sealed class qBittorrentApiClient(qBittorrentTransport apiClient): qBitto
         }).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<TorrentInfo?> getTorrent(string infoHash) => (await listTorrents(hashFilters: [infoHash], limit: 1).ConfigureAwait(false)).SingleOrDefault();
+    public async Task<TorrentInfo?> getTorrent(string infoHash) =>
+        (await listTorrents(hashFilters: [infoHash], limit: 1).ConfigureAwait(false)).SingleOrDefault();
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TorrentFile>> listFilesInTorrent(TorrentInfo torrent) =>
-        (await apiClient.send<IEnumerable<TorrentFile>>(HttpMethod.Get, "torrents/files", query: ("hash", torrent.hash).KeyValues<string, object?>()).ConfigureAwait(false)).Select(file =>
-            file with { torrent = torrent });
+    public async Task<IReadOnlyList<TorrentFile>> listFilesInTorrent(TorrentInfo torrent) =>
+        (await apiClient.send<IEnumerable<TorrentFile>>(HttpMethod.Get, "torrents/files", query: ("hash", torrent.hash).KeyValues<string, object?>()).ConfigureAwait(false))
+        .Select(file => file with { torrent = torrent }).ToList().AsReadOnly();
 
     /// <inheritdoc />
     public async Task<Preferences> getPreferences() =>

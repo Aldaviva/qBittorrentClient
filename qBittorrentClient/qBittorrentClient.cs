@@ -7,12 +7,12 @@ namespace qBittorrent.Client;
 public interface qBittorrentClient: IDisposable {
 
     /// <summary>
-    /// <para>List torrents</para>
+    /// <para>List torrents.</para>
     /// <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-list"/>
     /// </summary>
     /// <exception cref="HttpRequestException"></exception>
-    Task<IEnumerable<TorrentInfo>> listTorrents(TorrentStateFilter stateFilter = TorrentStateFilter.ALL, string? categoryFilter = null, string? tagFilter = null,
-                                                IEnumerable<string>? hashFilters = null, int limit = 0, int offset = 0, string? sort = null, bool descending = false);
+    Task<IReadOnlyList<TorrentInfo>> listTorrents(TorrentStateFilter stateFilter = TorrentStateFilter.ALL, string? categoryFilter = null, string? tagFilter = null,
+                                                  IEnumerable<string>? hashFilters = null, int limit = 0, int offset = 0, string? sort = null, bool descending = false);
 
     /// <summary>
     /// <para>Get one torrent.</para>
@@ -25,28 +25,28 @@ public interface qBittorrentClient: IDisposable {
     Task<TorrentInfo?> getTorrent(string infoHash);
 
     /// <summary>
-    /// <para>List files in a torrents</para>
+    /// <para>List files in a torrent.</para>
     /// <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-contents"/>
     /// </summary>
     /// <exception cref="HttpRequestException"></exception>
-    Task<IEnumerable<TorrentFile>> listFilesInTorrent(TorrentInfo torrent);
+    Task<IReadOnlyList<TorrentFile>> listFilesInTorrent(TorrentInfo torrent);
 
     /// <summary>
-    /// <para>Get the application settings</para>
+    /// <para>Get the application settings.</para>
     /// <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-application-preferences"/>
     /// </summary>
     /// <exception cref="HttpRequestException"></exception>
     Task<Preferences> getPreferences();
 
     /// <summary>
-    /// <para>Get the application settings</para>
+    /// <para>Get the application settings.</para>
     /// <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-application-preferences"/>
     /// </summary>
     /// <exception cref="HttpRequestException"></exception>
     Task setPreferences(Preferences newPreferences);
 
     /// <summary>
-    /// <para>Get transfer statistics for entire program</para>
+    /// <para>Get transfer statistics for entire program.</para>
     /// <see href="https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-global-transfer-info"/>
     /// </summary>
     /// <exception cref="HttpRequestException"></exception>

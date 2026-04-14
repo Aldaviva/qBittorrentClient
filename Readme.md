@@ -48,11 +48,11 @@ using qBittorrentClient qBittorrent = new qBittorrentApiClient(new qBittorrentHt
 
 ### List torrents
 ```cs
-IEnumerable<TorrentInfo> allTorrents = await qBittorrent.listTorrents();
+IReadOnlyList<TorrentInfo> allTorrents = await qBittorrent.listTorrents();
 ```
 ```cs
-IEnumerable<TorrentInfo> filteredTorrents = await qBittorrent.listTorrents(
-    stateFilter: TorrentState.RUNNING,
+IReadOnlyList<TorrentInfo> filteredTorrents = await qBittorrent.listTorrents(
+    stateFilter: TorrentStateFilter.RUNNING,
     categoryFilter: "My Category",
     tagFilter: "My Tag");
 ```
@@ -64,7 +64,7 @@ TorrentInfo? torrent = await qBittorrent.getTorrent(infoHash: "abc123");
 
 ### List files in torrent
 ```cs
-IEnumerable<TorrentFile> files = await qBittorrent.listFilesInTorrent(torrent);
+IReadOnlyList<TorrentFile> files = await qBittorrent.listFilesInTorrent(torrent);
 ```
 
 ### Get overall connection statistics

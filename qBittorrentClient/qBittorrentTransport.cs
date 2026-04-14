@@ -40,10 +40,11 @@ public sealed class qBittorrentHttpTransport: qBittorrentTransport {
     /// <para>Underlying <see cref="HttpClient"/> used to send requests to the qBittorrent HTTP API. A default instance is provided unless one is set.</para>
     /// <para>If you supply a custom instance, it must be either an <see cref="UnfuckedHttpClient"/>, or an <see cref="HttpClient"/> whose <see cref="HttpMessageHandler"/> is an <see cref="UnfuckedHttpHandler"/>. Otherwise, requests will throw an <see cref="InvalidOperationException"/>.</para>
     /// </summary>
+    /// <exception cref="ArgumentNullException" accessor="set">Property is set to <c>null</c></exception>
     public HttpClient httpClient {
         get => field ?? defaultHttpClient.Value;
         init {
-            field     = value;
+            field     = value ?? throw new ArgumentNullException(nameof(value));
             apiTarget = createApiTarget();
             if (defaultHttpClient.IsValueCreated) {
                 defaultHttpClient.Value.Dispose();
@@ -62,9 +63,9 @@ public sealed class qBittorrentHttpTransport: qBittorrentTransport {
     }
 
     private IWebTarget createApiTarget() => httpClient
-        .Property(PropertyKey.JsonSerializerOptions, JSON_OPTIONS)
         .Target(webUiBaseUrl?.Truncate(UriExtensions.Part.Origin) ?? "http://localhost:8080")
-        .Path("/api/v2");
+        .Property(PropertyKey.JsonSerializerOptions, JSON_OPTIONS)
+        .Path("api/v2");
 
     /// <summary>
     /// Send an HTTP request to the qBittorrent JSON REST API and receive a response.
@@ -84,14 +85,17 @@ public sealed class qBittorrentHttpTransport: qBittorrentTransport {
     public async Task<T> send<T>(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null) =>
         await target(apiMethodSubPath, query).Send<T>(verb, createBody(verb, requestBody)).ConfigureAwait(false);
 
-    private IWebTarget target(string apiMethodSubPath, IEnumerable<KeyValuePair<string, object?>>? query) => apiTarget.Path(sanitizeSubpath(apiMethodSubPath)).QueryParam(query);
+    private IWebTarget target(string apiMethodSubPath, IEnumerable<KeyValuePair<string, object?>>? query) =>
+        apiTarget.Path(sanitizeSubpath(apiMethodSubPath)).QueryParam(query);
 
-    private static string sanitizeSubpath(string apiMethodSubPath) => apiMethodSubPath.TrimStart('/');
+    private static string sanitizeSubpath(string apiMethodSubPath) =>
+        apiMethodSubPath.TrimStart('/');
 
     private static FormUrlEncodedContent? createBody(HttpMethod verb, object? requestBody) =>
-        (verb == HttpMethod.Post || verb == HttpMethod.Put) && requestBody != null ? new FormUrlEncodedContent([
-            new KeyValuePair<string, string>("json", JsonSerializer.Serialize(requestBody, JSON_OPTIONS)) // that's right, it's JSON inside form URL-encoding
-        ]) : null;
+        (verb == HttpMethod.Post || verb == HttpMethod.Put) && requestBody is not null
+            // that's right, it's JSON inside form URL-encoding
+            ? new FormUrlEncodedContent([new KeyValuePair<string, string>("json", JsonSerializer.Serialize(requestBody, JSON_OPTIONS))])
+            : null;
 
     /// <inheritdoc />
     public void Dispose() {
