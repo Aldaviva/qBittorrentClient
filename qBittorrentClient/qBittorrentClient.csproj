@@ -33,7 +33,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.202" PrivateAssets="All" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.203" PrivateAssets="All" />
         <PackageReference Include="Unfucked.HTTP" Version="0.0.1-beta.30" NoWarn="NU5104" />
     </ItemGroup>
 
