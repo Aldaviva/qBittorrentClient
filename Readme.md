@@ -22,7 +22,7 @@
 ## Prerequisites
 - [qBittorrent](https://www.qbittorrent.org/download) ≥ 5
     - Web UI must be enabled in qBittorrent › Tools › Web UI
-- [.NET](https://dotnet.microsoft.com/en-us/download) runtime that supports [.NET Standard ≥ 2](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0)
+- [.NET](https://dotnet.microsoft.com/download) runtime that supports [.NET Standard ≥ 2](https://learn.microsoft.com/dotnet/standard/net-standard?tabs=net-standard-2-0)
     - .NET ≥ 5
     - .NET Core ≥ 2
     - .NET Framework ≥ 4.6.1
