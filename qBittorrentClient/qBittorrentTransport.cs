@@ -18,12 +18,13 @@ public interface qBittorrentTransport: IDisposable {
     /// <param name="requestBody">optional object to be serialized to JSON and passed in the JSON form field, or <c>null</c> to not send a request body</param>
     /// <param name="query">optional query parameters to send, or <c>null</c> to not send any query parameters</param>
     /// <returns>the HTTP response</returns>
-    /// <exception cref="HttpRequestException">if the response status code is ≥400</exception>
+    /// <exception cref="Unfucked.HTTP.Exceptions.ProcessingException"></exception>
     Task<HttpResponseMessage> send(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null);
 
     /// <inheritdoc cref="qBittorrentHttpTransport.send"/>
     /// <returns>deserialized response body</returns>
     /// <typeparam name="T">the type to deserialize from the response JSON body</typeparam>
+    /// <exception cref="Unfucked.HTTP.Exceptions.WebApplicationException"></exception>
     Task<T> send<T>(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null);
 
 }
@@ -34,7 +35,7 @@ public sealed class qBittorrentHttpTransport: qBittorrentTransport {
     private static readonly JsonSerializerOptions JSON_OPTIONS = new(JsonSerializerDefaults.Web)
         { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }, PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
-    private readonly Lazy<HttpClient> defaultHttpClient = new(static () => new UnfuckedHttpClient { Timeout = TimeSpan.FromSeconds(30) });
+    private readonly Lazy<HttpClient> defaultHttpClient = new(static () => new UnfuckedHttpClient { Timeout = TimeSpan.FromMinutes(3) });
 
     /// <summary>
     /// <para>Underlying <see cref="HttpClient"/> used to send requests to the qBittorrent HTTP API. A default instance is provided unless one is set.</para>
@@ -75,13 +76,14 @@ public sealed class qBittorrentHttpTransport: qBittorrentTransport {
     /// <param name="requestBody">optional object to be serialized to JSON and passed in the JSON form field, or <c>null</c> to not send a request body</param>
     /// <param name="query">optional query parameters to send, or <c>null</c> to not send any query parameters</param>
     /// <returns>the HTTP response</returns>
-    /// <exception cref="HttpRequestException">if the response status code is ≥400</exception>
+    /// <exception cref="Unfucked.HTTP.Exceptions.ProcessingException"></exception>
     public async Task<HttpResponseMessage> send(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null) =>
         await target(apiMethodSubPath, query).Send(verb, createBody(verb, requestBody)).ConfigureAwait(false);
 
     /// <inheritdoc cref="send"/>
     /// <returns>deserialized response body</returns>
     /// <typeparam name="T">the type to deserialize from the response JSON body</typeparam>
+    /// <exception cref="Unfucked.HTTP.Exceptions.WebApplicationException"></exception>
     public async Task<T> send<T>(HttpMethod verb, string apiMethodSubPath, object? requestBody = null, IEnumerable<KeyValuePair<string, object?>>? query = null) =>
         await target(apiMethodSubPath, query).Send<T>(verb, createBody(verb, requestBody)).ConfigureAwait(false);
 

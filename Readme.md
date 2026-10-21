@@ -14,6 +14,7 @@
     - [List torrents](#list-torrents)
     - [Get torrent](#get-torrent)
     - [List files in torrent](#list-files-in-torrent)
+    - [Pause and resume session](#pause-and-resume-session)
     - [Get overall connection statistics](#get-overall-connection-statistics)
     - [Get and set preferences](#get-and-set-preferences)
 
@@ -65,6 +66,17 @@ TorrentInfo? torrent = await qBittorrent.getTorrent(infoHash: "abc123");
 ### List files in torrent
 ```cs
 IReadOnlyList<TorrentFile> files = await qBittorrent.listFilesInTorrent(torrent);
+```
+
+### Pause and resume session
+```cs
+await qBittorrent.setSessionPaused(pause: true);
+```
+```cs
+await qBittorrent.setSessionPaused(pause: false);
+```
+```cs
+bool isPaused = await qBittorrent.isSessionPaused();
 ```
 
 ### Get overall connection statistics
